@@ -1,0 +1,20 @@
+{
+    "generico": {
+        "data": ["(\\d{2}/\\d{2}/\\d{4})", "(\\d{2} de [a-zA-Z]+ de \\d{4})"],
+        "valor": ["Total:\\s*([\\d\\.,]+)", "R\\$\\s*([\\d\\.,]+)"],
+        "descricao": ["Referente a:\\s*(.*)", "Serviço:\\s*(.*)"],
+        "categoria": {
+            "Agua": ["água", "saneamento"],
+            "Luz": ["energia", "eletricidade"],
+            "Internet": ["internet", "banda larga"],
+            "Manutenção": ["manutenção", "jardim"]
+        }
+    },
+    "conta_luz": {
+        "identificadores": ["conta de energia", "eletropaulo", "enel"],
+        "data": ["Vencimento:\\s*(\\d{2}/\\d{2}/\\d{4})"],
+        "valor": ["Valor a Pagar\\s*R\\$\\s*([\\d\\.,]+)"],
+        "descricao": ["(Consumo de Energia Elétrica)"],
+        "categoria": { "Luz": ["energia", "eletricidade"] }
+    }
+}
