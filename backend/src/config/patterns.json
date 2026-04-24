@@ -1,4 +1,54 @@
 {
+    "danfe_produto": {
+        "identificadores": ["danfe", "documento auxiliar da nota fiscal", "nota fiscal eletrônica", "\\bnf-e\\b"],
+        "data": ["DATA DA EMISSÃO\\s*(\\d{2}/\\d{2}/\\d{4})", "DATA DE SAÍDA\\s*(\\d{2}/\\d{2}/\\d{4})", "Emissão:\\s*(\\d{2}/\\d{2}/\\d{4})"],
+        "valor": [
+            "VALOR TOTAL DA NOTA[\\s\\n\\r]+.*?([\\d\\.,]{3,})\\s*(?=TRANSPORTADOR|DADOS ADICIONAIS|CÁLCULO DO ISSQN|$)",
+            "VALOR TOTAL DA NOTA\\s*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "VALOR TOTAL DOS PRODUTOS\\s*(?:R\\$)?\\s*([\\d\\.,]+)"
+        ],
+        "descricao": ["NOME / RAZÃO SOCIAL\\s*(.*)", "DESTINATÁRIO / REMETENTE\\s*(.*)"],
+        "categoria": { "Nota Fiscal / Produto": ["danfe", "nf-e", "produtos"] }
+    },
+    "nfse_servico": {
+        "identificadores": ["nota fiscal de serviços eletrônica", "\\bnfs-e\\b", "nota fiscal de serviço", "prestador dos serviços", "prefeitura", "nfs-e", "nfse campinas"],
+        "data": ["Data e Hora da Emissão\\s*(\\d{2}/\\d{2}/\\d{4})", "Data de Emissão\\s*(\\d{2}/\\d{2}/\\d{4})", "Competência\\s*(\\d{2}/\\d{2}/\\d{4})", "Emissão:\\s*(\\d{2}/\\d{2}/\\d{4})"],
+        "valor": [
+            "Valor Lquido da NFSe Campinas.*?([\\d\\.,]{3,})",
+            "Valor total da NFSe Campinas.*?([\\d\\.,]{3,})",
+            "Valor documento[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)",
+            "Valor Lquido da NotaFiscal[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "Valor Total da Nota[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "VALOR TOTAL DO SERVIO[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "Valor Lquido[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)",
+            "Total R\\$\\s*([\\d\\.,]{3,})"
+        ],
+        "descricao": ["Nome / Nome Empresarial\\s*(.*)", "Nome/Razo Social:\\s*(.*)", "Razo Social/Nome:\\s*(.*)", "Prestador dos Servios\\s*(.*)"],
+        "categoria": { "Nota Fiscal / Servio": ["nota fiscal", "nfs-e"] }
+    },
+    "guias_impostos": {
+        "identificadores": ["guia de arrecadação", "darf", "gps", "dae", "documento de arrecadação", "arrecadação de receitas federais", "fgts digital", "issqn", "tributário", "município", "prefeitura", "gfd - guia"],
+        "data": [
+            "Pagar este documento at[\\s:]*(\\d{2}/\\d{2}/\\d{4})",
+            "Data de Vencimento[\\s:]*(\\d{2}/\\d{2}/\\d{4})", 
+            "Data do pagamento[\\s:]*(\\d{2}/\\d{2}/\\d{4})",
+            "Vencimento[\\s:]*(\\d{2}/\\d{2}/\\d{4})",
+            "Perodo de Apurao[\\s:]*(\\d{2}/\\d{4})",
+            "Ms Referncia[\\s:]*(\\d{2}/\\d{4})"
+        ],
+        "valor": [
+            "Valor a recolher.*?([\\d\\.,]{3,})",
+            "Total da Guia[\\s:]*([\\d\\.,]{3,})",
+            "Valor Total do Documento[\\s\\n\\r]*(?:.*?)[\\s\\n\\r]*([\\d\\.,]{3,})",
+            "Valor:[\\s;:]*([\\d\\.,]{3,})",
+            "Total a Recolher[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "Valor a Recolher[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)",
+            "Valor Total[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)",
+            "Total R\\$\\s*([\\d\\.,]{3,})"
+        ],
+        "descricao": ["Nome/Razo Social do Empregador\\s*(.*)", "Nome/Razo Social[\\s:]*(.*?)(?=Data|CNPJ|$)", "Contribuinte[\\s:]*(.*?)(?=Data|CNPJ|$)"],
+        "categoria": { "Impostos/Taxas": ["guia", "imposto", "darf", "fgts", "issqn"] }
+    },
     "generico": {
         "data": [
             "Vencimento:\\s*(\\d{2}/\\d{2}/\\d{4})", 
@@ -7,81 +57,84 @@
             "(\\d{2} de [a-zA-Z]+ de \\d{4})"
         ],
         "valor": [
-            "(?:Total|Valor a Pagar|Valor a recolher|Valor da Fatura|Fatura|Pagamento).*?(?:R\\$)?\\s*([\\d\\.,]{3,})",
+            "Valor:[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]{3,})",
+            "Valor documento[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)",
+            "(?:Total a Pagar|Valor a Pagar|Valor a recolher|Valor da Fatura|Total|Valor do Documento|Valor do boleto|Valor do pagamento|Total da Guia)[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]{3,})",
             "Total:\\s*([\\d\\.,]+)", 
-            "R\\$\\s*([\\d\\.,]+)",
-            "Valor a recolher\\s*([\\d\\.,]+)"
+            "R\\$\\s*([\\d\\.,]+)"
         ],
         "descricao": [
-            "Referente a:\\s*(.*)", 
-            "Serviço:\\s*(.*)", 
-            "Descrição:\\s*(.*)"
+            "Referente a:\\s*(.*?)(?=Data|Valor|Vencimento|$)", 
+            "Servio:\\s*(.*?)(?=Data|Valor|Vencimento|$)", 
+            "Descrio:\\s*(.*?)(?=Data|Valor|Vencimento|$)"
         ],
         "categoria": {
-            "Agua": ["água", "saneamento", "sabesp", "copasa", "sanepar", "caesb"],
+            "Agua": ["gua", "saneamento", "sabesp", "copasa", "sanepar", "caesb"],
             "Luz": ["energia", "eletricidade", "eletropaulo", "enel", "cemig", "light", "cpfl"],
-            "Internet": ["internet", "banda larga", "vivo", "claro", "tim", "algar", "gvt", "telefônica"],
-            "Manutenção": ["manutenção", "jardim", "elevador", "limpeza", "conservação", "limpaza", "extintor", "obras", "reparos"],
-            "Cartão de Crédito": ["fatura do cartão", "cartão de crédito", "mastercard", "visa", "nubank", "itaú"],
-            "Impostos/Taxas": ["fgts", "inss", "darf", "guia", "imposto", "iss", "das", "dae", "arrecadação", "tributo"],
-            "Pagamentos": ["transferência", "pix", "comprovante", "boleto", "pagamento"],
-            "RH / Folha": ["salário", "folha", "holerite", "recibo de pagamento", "adiantamento", "vt", "vale transporte"]
+            "Internet": ["\\bclaro\\b", "\\bvivo\\b", "\\btim\\b", "\\balgar\\b", "\\bgvt\\b", "\\boi\\b", "telecomunicaes"],
+            "Manuteno": ["manuteno", "jardim", "elevador", "limpeza", "conservao", "extintor", "reparos"],
+            "Impostos/Taxas": ["fgts", "inss", "darf", "imposto", "iss", "das", "dae", "arrecadao", "prefeitura", "municpio"],
+            "RH / Folha": ["salrio", "folha", "holerite", "adiantamento", "vale transporte"]
         }
     },
-    "nfse_servico": {
-        "identificadores": ["nota fiscal de serviços eletrônica", "nfs-e", "nota fiscal de serviço", "prestador dos serviços", "prefeitura"],
-        "data": ["Data e Hora da Emissão\\s*(\\d{2}/\\d{2}/\\d{4})", "Data de Emissão\\s*(\\d{2}/\\d{2}/\\d{4})", "Competência\\s*(\\d{2}/\\d{2}/\\d{4})", "Emissão:\\s*(\\d{2}/\\d{2}/\\d{4})"],
-        "valor": ["Valor Líquido da NotaFiscal[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", "Valor Total da Nota[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", "VALOR TOTAL DO SERVIÇO[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", "Valor Líquido[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)"],
-        "descricao": ["Nome/Razão Social:\\s*(.*)", "Razão Social/Nome:\\s*(.*)", "Prestador dos Serviços\\s*(.*)"],
-        "categoria": { "Nota Fiscal / Serviço": ["nota fiscal", "nfs-e"] }
-    },
-    "danfe_produto": {
-        "identificadores": ["danfe", "documento auxiliar da nota fiscal", "nota fiscal eletrônica", "nf-e"],
-        "data": ["DATA DA EMISSÃO\\s*(\\d{2}/\\d{2}/\\d{4})", "DATA DE SAÍDA\\s*(\\d{2}/\\d{2}/\\d{4})", "Emissão:\\s*(\\d{2}/\\d{2}/\\d{4})"],
-        "valor": ["VALOR TOTAL DA NOTA\\s*(?:R\\$)?\\s*([\\d\\.,]+)", "VALOR TOTAL DOS PRODUTOS\\s*(?:R\\$)?\\s*([\\d\\.,]+)"],
-        "descricao": ["NOME / RAZÃO SOCIAL\\s*(.*)", "DESTINATÁRIO / REMETENTE\\s*(.*)"],
-        "categoria": { "Nota Fiscal / Produto": ["danfe", "nf-e", "produtos"] }
-    },
-    "boleto_bancario": {
-        "identificadores": ["recibo do sacado", "beneficiário", "código de barras", "autenticação mecânica", "nosso número", "pagador"],
-        "data": ["Vencimento[\\s:]*(\\d{2}/\\d{2}/\\d{4})", "Data de Vencimento[\\s:]*(\\d{2}/\\d{2}/\\d{4})"],
-        "valor": ["Valor do Documento[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", "=\\)\\s*Valor cobrado[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)"],
-        "descricao": ["Nome do Beneficiário[\\s:]*(.*)", "Beneficiário[\\s:]*(.*)"],
-        "categoria": { "Boleto": ["boleto", "recibo do sacado"] }
-    },
-    "recibo_salario": {
-        "identificadores": ["recibo de pagamento de salário", "folha de pagamento", "adiantamento quinzenal", "vale transporte", "recibo de férias"],
-        "data": ["Data[\\s:]*(\\d{2}/\\d{2}/\\d{4})", "Mês/Ano[\\s:]*([a-zA-Z]+/\\d{4})", "Competência[\\s:]*(\\d{2}/\\d{4})"],
-        "valor": ["Líquido a Receber[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", "Total Líquido[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", "Valor Líquido[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)"],
-        "descricao": ["Nome do Funcionário[\\s:]*(.*)", "Empregado[\\s:]*(.*)", "Nome[\\s:]*(.*)"],
-        "categoria": { "RH / Folha": ["salário", "folha", "holerite"] }
-    },
-    "guias_impostos": {
-        "identificadores": ["guia de arrecadação", "darf", "gps", "dae", "documento de arrecadação", "iss retido"],
-        "data": ["Data de Vencimento[\\s:]*(\\d{2}/\\d{2}/\\d{4})", "Pagar este documento até[\\s:]*(\\d{2}/\\d{2}/\\d{4})", "Período de Apuração[\\s:]*(\\d{2}/\\d{4})"],
-        "valor": ["Valor Total[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", "Total a Recolher[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)", "Valor a Recolher[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)"],
-        "descricao": ["Nome/Razão Social[\\s:]*(.*)", "Contribuinte[\\s:]*(.*)"],
-        "categoria": { "Impostos/Taxas": ["guia", "imposto", "darf"] }
+    "conta_luz": {
+        "identificadores": ["conta de energia", "eletropaulo", "enel", "cpfl", "energia eltrica", "companhia paulista", "distribuidora de energia"],
+        "data": [
+            "Vencimento[\\s:]*(\\d{2}/\\d{2}/\\d{4})", 
+            "Data de Vencimento[\\s:]*(\\d{2}/\\d{2}/\\d{4})",
+            "(\\d{2}/\\d{2}/\\d{4})\\s+Total a Pagar",
+            "[A-Za-z]{3}/\\d{4}\\s+(\\d{2}/\\d{2}/\\d{4})\\s+R\\$"
+        ],
+        "valor": [
+            "Conta de Energia Eltrica\\s+\\d+\\s+([\\d\\.,]{3,})\\s+\\d{2}/\\d{2}/\\d{4}",
+            "Total Distribuidora[\\s:]*(?:R\\$)?\\s*([\\d\\.,]{3,})",
+            "Total a pagar[\\s:]*(?:R\\$)?\\s*([\\d\\.,]{3,})", 
+            "[A-Za-z]{3}/\\d{4}\\s+\\d{2}/\\d{2}/\\d{4}\\s+R\\$\\s*([\\d\\.,]{3,})"
+        ],
+        "descricao": ["(Consumo de Energia Eltrica)"],
+        "categoria": { "Luz": ["energia", "eletricidade", "cpfl"] }
     },
     "comprovante_transferencia": {
-        "identificadores": ["comprovante de transferência", "comprovante de pagamento", "comprovante de transação", "sispag"],
-        "data": ["data da transferência:\\s*(\\d{2}/\\d{2}/\\d{4})", "data do pagamento:\\s*(\\d{2}/\\d{2}/\\d{4})"],
-        "valor": ["valor:\\s*R\\$\\s*([\\d\\.,]+)"],
-        "descricao": ["nome do recebedor:\\s*(.*)", "recebedor:\\s*(.*)", "favorecido:\\s*(.*)"],
-        "categoria": { "Pagamentos": ["transferência", "pix"] }
+        "identificadores": ["comprovante de transferncia", "comprovante de pagamento", "comprovante de transao", "sispag", "comprovante de pix"],
+        "data": [
+            "data da transferncia[\\s:]*(\\d{2}/\\d{2}/\\d{4})", 
+            "data do pagamento[\\s:]*(\\d{2}/\\d{2}/\\d{4})", 
+            "Data de pagamento[\\s:]*(?:.*?)[\\s\\n\\r]*(\\d{2}/\\d{2}/\\d{4})",
+            "efetuada em[\\s:]*(\\d{2}/\\d{2}/\\d{4})"
+        ],
+        "valor": [
+            "valor:[\\s;:]*R\\$\\s*([\\d\\.,]+)", 
+            "valor transferido[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "valor pago[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "Valor do boleto \\(R\\$\\)[;:\\s]*(?:.*?)[\\s\\n\\r]*([\\d\\.,]{3,})", 
+            "Valor do pagamento \\(R\\$\\)[;:\\s]*(?:.*?)[\\s\\n\\r]*([\\d\\.,]{3,})", 
+            "valor total[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)"
+        ],
+        "descricao": ["nome do recebedor:[\\s:]*(.*?)", "recebedor:[\\s:]*(.*?)", "favorecido:[\\s:]*(.*?)", "Favorecido[\\s:]*(.*?)", "Nome do Favorecido[\\s:]*(.*?)(?=CPF|CNPJ|$)"],
+        "categoria": { "Pagamentos": ["transferncia", "pix", "pagamento", "sispag", "boleto"] }
     },
-    "guia_fgts": {
-        "identificadores": ["fgts digital", "guia do fgts", "gfd"],
-        "data": ["Pagar este documento até\\s*(\\d{2}/\\d{2}/\\d{4})", "(\\d{2}/\\d{2}/\\d{4})"],
-        "valor": ["Valor a recolher\\s*([\\d\\.,]+)"],
-        "descricao": ["(Guia do FGTS Digital)"],
-        "categoria": { "Impostos/Taxas": ["fgts digital", "gfd"] }
-    },
-    "conta_luz": {
-        "identificadores": ["conta de energia", "eletropaulo", "enel"],
-        "data": ["Vencimento:\\s*(\\d{2}/\\d{2}/\\d{4})"],
-        "valor": ["Valor a Pagar\\s*R\\$\\s*([\\d\\.,]+)"],
-        "descricao": ["(Consumo de Energia Elétrica)"],
-        "categoria": { "Luz": ["energia", "eletricidade"] }
+    "boleto_bancario": {
+        "identificadores": ["recibo do sacado", "beneficirio", "cdigo de barras", "autenticao mecnica", "nosso nmero", "pagador", "vidas reais"],
+        "data": [
+            "Vencimento[\\s:]*(\\d{2}/\\d{2}/\\d{4})", 
+            "Data de Vencimento[\\s:]*(\\d{2}/\\d{2}/\\d{4})", 
+            "Data de pagamento[\\s:]*(\\d{2}/\\d{2}/\\d{4})",
+            "(\\d{2}/\\d{2}/\\d{4})\\s+\\d{2}/\\d{2}/\\d{4}"
+        ],
+        "valor": [
+            "Valor:[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]{3,})",
+            "Valor documento[\\s:]*(?:R\\$)?\\s*([\\d\\.,]+)",
+            "Total R\\$\\s*([\\d\\.,]{3,})",
+            "Valor do Documento[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "=\\)\\s*Valor cobrado[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "Valor do boleto \\(R\\$\\)[;:\\s]*(?:.*?)[\\s\\n\\r]*([\\d\\.,]{3,})", 
+            "Valor do pagamento \\(R\\$\\)[;:\\s]*(?:.*?)[\\s\\n\\r]*([\\d\\.,]{3,})",
+            "R\\$\\s*([\\d\\.,]{3,})"
+        ],
+        "descricao": [
+            "Nome do Beneficirio[\\s:]*(.*?)(?=CPF/CNPJ|Data|Vencimento|Agncia|$)", 
+            "Beneficirio[\\s:]*(.*?)(?=CPF/CNPJ|Data|Vencimento|Agncia|$)"
+        ],
+        "categoria": { "Boleto": ["boleto", "recibo do sacado"] }
     }
 }

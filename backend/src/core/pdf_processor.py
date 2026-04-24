@@ -1,30 +1,42 @@
 import os
 from pypdf import PdfReader
 from PIL import Image, UnidentifiedImageError
-import pytesseract
+# import pytesseract (movido para dentro do bloco de imagem para evitar erros de importação)
 
 class PDFProcessor:
     def extract_text(self, file_path: str) -> str:
         ext = os.path.splitext(file_path)[1].lower()
         
-        # 1. Se for PDF, vai pro leitor padrao
+        # 1. Se for PDF, vai pro leitor com layout espacial (pdfplumber)
         if ext == '.pdf':
             text = ""
             try:
-                reader = PdfReader(file_path)
-                for page in reader.pages:
-                    extracted = page.extract_text()
-                    if extracted:
-                        text += extracted + "\n"
+                import pdfplumber
+                with pdfplumber.open(file_path) as pdf:
+                    for page in pdf.pages:
+                        extracted = page.extract_text()
+                        if extracted:
+                            text += extracted + "\n"
                 
                 if text.strip():
                     return text.strip()
             except Exception as e:
-                raise Exception(f"Falha ao ler o PDF: {e}")
+                # Fallback de segurança para pypdf caso pdfplumber falhe por algum motivo bizarro
+                try:
+                    reader = PdfReader(file_path)
+                    for page in reader.pages:
+                        extracted = page.extract_text()
+                        if extracted:
+                            text += extracted + "\n"
+                    if text.strip():
+                        return text.strip()
+                except Exception as fallback_err:
+                    raise Exception(f"Falha ao ler o PDF: {e} | Fallback: {fallback_err}")
                 
         # 2. Se for Imagem, vai pro OCR
         elif ext in ['.jpg', '.jpeg', '.png', '.bmp']:
             try:
+                import pytesseract
                 img = Image.open(file_path)
                 text = pytesseract.image_to_string(img, lang='por')
                 return text.strip()

@@ -231,7 +231,7 @@ function App() {
             )}
           </div>
 
-          {/* Terminal Window (Mostra apenas quando tem logs ou está carregando) */}
+          {/* Terminal Window */}
           {(logs.length > 0 || loading) && (
             <div className="bg-slate-900 rounded-2xl shadow-xl overflow-hidden flex flex-col h-[350px] border border-slate-800 transition-all">
               <div className="bg-slate-800 px-4 py-3 flex items-center gap-2 border-b border-slate-700">
@@ -255,7 +255,6 @@ function App() {
         {/* Results Area */}
         {results && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8 pt-8 border-t border-slate-200">
-            {/* Mantém a tabela e os resultados que já tínhamos */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <p className="text-slate-500 text-sm font-medium mb-1">Status da Extração</p>
@@ -372,10 +371,8 @@ function App() {
                 </table>
               </div>
             </div>
-            
           </div>
         )}
-
       </main>
     </div>
   );

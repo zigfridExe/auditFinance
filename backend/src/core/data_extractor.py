@@ -17,10 +17,18 @@ class DataExtractor:
             return "generico"
             
         text_lower = text.lower()
+        # Itera na ordem do JSON (Impostos, Luz, etc primeiro)
         for doc_type, config in self.patterns.items():
+            if doc_type == "generico": continue
+            
             if "identificadores" in config:
                 for identifier in config["identificadores"]:
-                    if identifier.lower() in text_lower:
+                    # Se o identificador for um regex (contém \b ou []), usa busca regex
+                    if "\\" in identifier or "[" in identifier:
+                        if re.search(identifier, text, re.IGNORECASE):
+                            return doc_type
+                    # Caso contrário, busca simples para performance
+                    elif identifier.lower() in text_lower:
                         return doc_type
         return "generico"
 
@@ -46,44 +54,47 @@ class DataExtractor:
         }
 
         # Extração de dados usando os padrões regex
+        # IMPORTANTE: re.DOTALL permite que o '.' pegue quebras de linha (crucial para CPFL/Itaú)
         for field in ["data", "valor", "descricao"]:
             if field in config:
                 for pattern in config[field]:
-                    match = re.search(pattern, text, re.IGNORECASE)
+                    # Usamos DOTALL para capturar valores em linhas subsequentes ao rótulo
+                    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
                     if match:
                         val = match.group(1).strip()
                         
                         if field == "valor":
+                            # Limpeza básica de caracteres comuns que quebram o float
+                            val = val.replace(" ", "")
                             # Remove pontuações finais
-                            val = val.rstrip("., ")
+                            val = val.rstrip(".,; ")
                             
-                            # Filtro anti-código de barras (se tiver mais de 15 números seguidos ou pontuações estranhas, ignora)
-                            # Remove tudo exceto numeros e virgula/ponto para contar
+                            # Filtro anti-código de barras
                             numerics_only = re.sub(r'[^\d]', '', val)
-                            if len(numerics_only) > 12: # Um valor com mais de 12 dígitos é na casa dos Bilhões (improvável) ou é código de barras
+                            if len(numerics_only) > 12: 
                                 continue 
                             
-                            # Tenta formatar para o padrão brasileiro garantido
-                            # Ex: 1.500.20 ou 1,500.20 ou 1500,20
-                            # Se tiver ponto e virgula, a virgula costuma ser o decimal no BR
                             try:
                                 clean_val = val.replace("R$", "").strip()
-                                # Se estiver no formato americano (1,000.00)
-                                if re.match(r'^\d{1,3}(,\d{3})*\.\d{2}$', clean_val):
-                                    clean_val = clean_val.replace(",", "")
-                                # Formato brasileiro (1.000,00)
-                                else:
-                                    clean_val = clean_val.replace(".", "").replace(",", ".")
+                                # Se tiver ponto e virgula (BR)
+                                if "," in clean_val and "." in clean_val:
+                                    # Se a virgula vier depois do ponto, é BR
+                                    if clean_val.rfind(",") > clean_val.rfind("."):
+                                        clean_val = clean_val.replace(".", "").replace(",", ".")
+                                    else: # Formato Americano
+                                        clean_val = clean_val.replace(",", "")
+                                elif "," in clean_val: # Apenas virgula
+                                    clean_val = clean_val.replace(",", ".")
                                 
                                 float_val = float(clean_val)
                                 val = f"{float_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
                             except:
-                                pass # Mantém o original se der erro
+                                pass 
                                 
                         extracted_data[field] = val
                         break
         
-        # Categorização baseada em palavras-chave no texto ou na descrição extraída
+        # Categorização baseada em palavras-chave
         text_for_category = text.lower()
         if "categoria" in config:
             for cat_name, keywords in config["categoria"].items():
