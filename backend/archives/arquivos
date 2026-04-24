@@ -8,7 +8,7 @@ var APPLICATION_CONF = {"APPLICATION_URL":"https:\/\/cairesimoveis1.superlogica.
 </script>
 <script type="text/javascript">
     //<!--
-var APPLICATION_INFO = {"VISITANTE_IP":"179.113.75.166","VISITANTE_IPS":"179.113.75.166, 172.71.6.152, 171.0.144.43"};    //-->
+var APPLICATION_INFO = {"VISITANTE_IP":"179.113.75.166","VISITANTE_IPS":"179.113.75.166, 172.68.19.128, 171.0.144.43"};    //-->
 </script>
 <script type="text/javascript" src="https://cairesimoveis1.superlogica.net/scripts/min/default-10b94868cbea0467ab080ebcb69406ee.js"></script>
 <script type="text/javascript" src="https://cairesimoveis1.superlogica.net/scripts/min/form-29be304f09f7499f1e1779b820ff81a8.js"></script>
@@ -180,9 +180,9 @@ jQuery( document ).ready( function(){ if ( document == window.parent.document )
              <div id="conteudo-container" class=" container" >
                 <div class="row">
                     <div id="conteudo" class="page page-tasks ng-scope ">
-                                                        <h1>Arquivos</h1><div id="subTitulo">DESPESA #57976 / parcela #61909</div><span id="botoesTopo" class="pull-right"></span>                            <!-- Os alertas aparecerão aqui -->
+                                                        <h1>Arquivos</h1><div id="subTitulo">DESPESA #61627 / parcela #66040</div><span id="botoesTopo" class="pull-right"></span>                            <!-- Os alertas aparecerão aqui -->
                             <div id="Superlogica_Js_Alerta"></div>
-                            <table style='width:100%'><td align="center"><a href="https://cairesimoveis1.superlogica.net/clients/areadocondomino/publico/downloadarquivo?id=166415&hash=ac5637ca150f71b2e5ba680f9a7cc6fa55ac971c&filename=cairesimoveis1" target="_blank" ><img src="https://cairesimoveis1.superlogica.net/temas/default/img/extensoes/pdf.png" width="100" border="0" title="RECIBO_FOLHA.pdf" /><br><div style="word-break: break-word;">RECIBO_FOLHA.pdf</div></a></td><td align="center"><a href="https://cairesimoveis1.superlogica.net/clients/areadocondomino/publico/downloadarquivo?id=166416&hash=c24b5eb0a1171c82655fbc041833ea1d75a7ecf3&filename=cairesimoveis1" target="_blank" ><img src="https://cairesimoveis1.superlogica.net/temas/default/img/extensoes/pdf.png" width="100" border="0" title="RELATORIO_ESPELHO_RESUMO.pdf" /><br><div style="word-break: break-word;">RELATORIO_ESPELH...</div></a></td><td align="center"><a href="https://cairesimoveis1.superlogica.net/clients/areadocondomino/publico/downloadarquivo?id=166659&hash=caf88f0fd30429a71a7fc91e160cdb8c494f40d5&filename=cairesimoveis1" target="_blank" ><img src="https://cairesimoveis1.superlogica.net/temas/default/img/extensoes/pdf.png" width="100" border="0" title="3072,6.pdf" /><br><div style="word-break: break-word;">3072,6.pdf</div></a></td></table>                    </div>
+                            <table style='width:100%'><td align="center"><a href="https://cairesimoveis1.superlogica.net/clients/areadocondomino/publico/downloadarquivo?id=179425&hash=9dbad21d18a2ebe380e283c374b58c3a3b9b94f3&filename=cairesimoveis1" comportamentos="abrirLightbox" class="galeria-imagem-upload" ><img src="https://cairesimoveis1.superlogica.net/clients/areadocondomino/publico/downloadarquivo?id=179425&hash=9dbad21d18a2ebe380e283c374b58c3a3b9b94f3&filename=cairesimoveis1" width="100" border="0" title="WhatsApp Image 2026-01-06 at 07.29.20.jpg" /><br><div style="word-break: break-word;">WhatsApp Image 2...</div></a></td><td align="center"><a href="https://cairesimoveis1.superlogica.net/clients/areadocondomino/publico/downloadarquivo?id=180740&hash=470a121a1376644878901d79118deaa3b80da343&filename=cairesimoveis1" target="_blank" ><img src="https://cairesimoveis1.superlogica.net/temas/default/img/extensoes/pdf.png" width="100" border="0" title="417,.pdf" /><br><div style="word-break: break-word;">417,.pdf</div></a></td></table>                    </div>
                 </div>
             </div>
         </div>

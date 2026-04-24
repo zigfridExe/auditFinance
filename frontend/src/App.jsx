@@ -1,12 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { UploadCloud, FileText, AlertTriangle, CheckCircle, Download, FileJson } from 'lucide-react';
+import { UploadCloud, FileText, AlertTriangle, CheckCircle, Download, FileJson, FolderOpen, Terminal } from 'lucide-react';
 
 function App() {
   const [file, setFile] = useState(null);
+  const [workDir, setWorkDir] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
+  
+  // Terminal state
+  const [logs, setLogs] = useState([]);
+  const logsEndRef = useRef(null);
+
+  // WebSocket Nativo para receber logs em tempo real
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8000/api/ws/logs');
+    ws.onmessage = (event) => {
+      setLogs((prev) => [...prev, event.data]);
+    };
+    return () => {
+      ws.close();
+    };
+  }, []);
+
+  // Auto-scroll do terminal
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logs]);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -23,9 +44,14 @@ function App() {
 
     setLoading(true);
     setError(null);
+    setLogs(['> Iniciando conexão com o Motor de Mineração...']);
+    setResults(null);
     
     const formData = new FormData();
     formData.append('file', file);
+    if (workDir) {
+      formData.append('work_dir', workDir);
+    }
 
     try {
       const response = await axios.post('http://localhost:8000/api/mine', formData, {
@@ -36,9 +62,47 @@ function App() {
       setResults(response.data);
     } catch (err) {
       console.error(err);
-      setError('Falha ao processar o arquivo. Verifique se o backend está rodando na porta 8000 e se o arquivo é um PDF legível.');
+      setError('Falha ao processar o arquivo. Verifique se o backend está rodando na porta 8000.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fileInputRef = useRef(null);
+
+  const handleMineBatch = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setLoading(true);
+    setError(null);
+    setLogs([`> Iniciando mineração em lote com ${files.length} arquivos selecionados...`]);
+    setResults(null);
+    
+    const formData = new FormData();
+    Array.from(files).forEach(file => {
+      formData.append('files', file);
+    });
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/mine_batch', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      if (response.data.error) {
+        setError(response.data.error);
+      } else {
+        setResults(response.data);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Falha ao enviar os arquivos da pasta selecionada. Verifique se o backend está rodando.');
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -47,16 +111,15 @@ function App() {
     
     const { main_document, attachments_data } = results;
     
-    // Cabeçalhos
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Tipo,Data,Categoria,Valor,Descrição,Origem\n";
+    csvContent += "Tipo,Data,Categoria,Valor,Descrição,Origem,Erro\n";
     
-    // Documento Principal
-    csvContent += `Documento Principal,${main_document.data || ''},${main_document.categoria || ''},${main_document.valor || ''},${main_document.descricao || ''},\n`;
+    const safeStr = (str) => str ? `"${str.toString().replace(/"/g, '""')}"` : '""';
     
-    // Anexos
+    csvContent += `"Documento Principal",${safeStr(main_document.data)},${safeStr(main_document.categoria)},${safeStr(main_document.valor)},${safeStr(main_document.descricao)},"", ""\n`;
+    
     attachments_data.forEach(att => {
-      csvContent += `Anexo,${att.data || ''},${att.categoria || ''},${att.valor || ''},${att.descricao || ''},${att.source_link || ''}\n`;
+      csvContent += `"Anexo",${safeStr(att.data)},${safeStr(att.categoria)},${safeStr(att.valor)},${safeStr(att.descricao)},${safeStr(att.source_link)},${safeStr(att.erro || '')}\n`;
     });
     
     const encodedUri = encodeURI(csvContent);
@@ -69,7 +132,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200 pb-20">
       
       {/* Header Premium */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
@@ -97,63 +160,102 @@ function App() {
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-8">
         
-        {/* Upload Zone */}
-        {!results && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-10 flex flex-col items-center justify-center text-center transition-all">
-            <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 transition-all duration-500 ${loading ? 'bg-blue-100 animate-pulse' : 'bg-slate-100'}`}>
-              <UploadCloud size={40} className={loading ? 'text-blue-500' : 'text-slate-400'} />
-            </div>
+        {/* Settings & Upload Zone */}
+        <div className="flex flex-col gap-8 max-w-3xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 flex flex-col transition-all">
             
-            <h2 className="text-2xl font-semibold mb-2">Envie a Prestação de Contas</h2>
-            <p className="text-slate-500 mb-8 max-w-md">Faça o upload do PDF principal. O motor irá minerar automaticamente o texto e baixar todos os anexos vinculados.</p>
-            
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <label className="cursor-pointer group">
-                <div className="flex items-center gap-2 bg-white border-2 border-dashed border-slate-300 hover:border-blue-500 px-6 py-3 rounded-xl font-medium text-slate-700 transition-colors">
-                  <FileText size={20} className="text-slate-400 group-hover:text-blue-500" />
-                  {file ? file.name : "Selecionar PDF"}
-                </div>
+            <div className="mb-6 pb-6 border-b border-slate-100">
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+                <FolderOpen size={18} className="text-blue-500"/>
+                Processamento Direto por Pasta Local
+              </label>
+              <div className="flex gap-3">
+                <input 
+                  type="text" 
+                  value={workDir}
+                  onChange={(e) => setWorkDir(e.target.value)}
+                  placeholder="Ex: C:\Documentos\Auditoria (Usado ao minerar PDF Principal)"
+                  className="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                />
+                
                 <input 
                   type="file" 
-                  accept="application/pdf" 
-                  onChange={handleFileChange} 
+                  multiple 
+                  webkitdirectory="true" 
                   className="hidden" 
+                  ref={fileInputRef} 
+                  onChange={handleMineBatch} 
                 />
-              </label>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white px-6 py-3 rounded-xl font-medium shadow-sm transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                >
+                  <FolderOpen size={16} /> Selecionar Pasta
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">Você pode usar o botão verde para escolher uma pasta no seu computador e extrair todos os PDFs e notas fiscais de uma vez, sem passar pela Superlógica.</p>
+            </div>
 
-              <button 
-                onClick={handleUpload}
-                disabled={!file || loading}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white px-8 py-3.5 rounded-xl font-medium shadow-lg shadow-blue-200 transition-all flex items-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processando...
-                  </>
-                ) : (
-                  'Iniciar Mineração'
-                )}
-              </button>
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 transition-all duration-500 ${loading ? 'bg-blue-100 animate-pulse' : 'bg-white shadow-sm'}`}>
+                <UploadCloud size={32} className={loading ? 'text-blue-500' : 'text-slate-400'} />
+              </div>
+              
+              <h2 className="text-xl font-semibold mb-1">Selecione a Prestação</h2>
+              
+              <div className="mt-6 w-full flex flex-col items-center gap-3">
+                <label className="cursor-pointer w-full group">
+                  <div className="flex items-center justify-center gap-2 bg-white border border-slate-300 hover:border-blue-500 px-6 py-3 rounded-xl font-medium text-slate-700 transition-colors w-full">
+                    <FileText size={18} className="text-slate-400 group-hover:text-blue-500" />
+                    <span className="truncate max-w-[300px]">{file ? file.name : "Escolher Arquivo PDF"}</span>
+                  </div>
+                  <input type="file" accept="application/pdf,image/*" onChange={handleFileChange} className="hidden" />
+                </label>
+
+                <button 
+                  onClick={handleUpload}
+                  disabled={!file || loading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white px-8 py-3.5 rounded-xl font-medium shadow-md transition-all flex justify-center items-center gap-2"
+                >
+                  {loading ? 'Processando...' : 'Iniciar Mineração'}
+                </button>
+              </div>
             </div>
             
             {error && (
-              <div className="mt-6 text-red-500 bg-red-50 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
+              <div className="mt-4 text-red-500 bg-red-50 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
                 <AlertTriangle size={18} />
                 {error}
               </div>
             )}
           </div>
-        )}
+
+          {/* Terminal Window (Mostra apenas quando tem logs ou está carregando) */}
+          {(logs.length > 0 || loading) && (
+            <div className="bg-slate-900 rounded-2xl shadow-xl overflow-hidden flex flex-col h-[350px] border border-slate-800 transition-all">
+              <div className="bg-slate-800 px-4 py-3 flex items-center gap-2 border-b border-slate-700">
+                <Terminal size={16} className="text-emerald-400" />
+                <span className="text-xs font-mono text-slate-300">minerador_engine.exe</span>
+              </div>
+              <div className="p-4 flex-1 overflow-y-auto font-mono text-xs sm:text-sm text-emerald-400 space-y-1">
+                {logs.length === 0 ? (
+                  <span className="text-slate-600">Aguardando início do processo...</span>
+                ) : (
+                  logs.map((log, index) => (
+                    <div key={index} className="break-all">{log}</div>
+                  ))
+                )}
+                <div ref={logsEndRef} />
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Results Area */}
         {results && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
-            {/* Dashboard Cards */}
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8 pt-8 border-t border-slate-200">
+            {/* Mantém a tabela e os resultados que já tínhamos */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <p className="text-slate-500 text-sm font-medium mb-1">Status da Extração</p>
@@ -187,12 +289,12 @@ function App() {
               </div>
             </div>
 
-            {/* Inconsistencies List */}
+            {/* Inconsistências */}
             {results.inconsistencies.length > 0 && (
               <div className="bg-white rounded-xl border border-red-200 shadow-sm overflow-hidden">
                 <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center gap-2">
                   <AlertTriangle size={20} className="text-red-600" />
-                  <h3 className="font-semibold text-red-800">Inconsistências Encontradas (RF11)</h3>
+                  <h3 className="font-semibold text-red-800">Inconsistências Encontradas na Auditoria</h3>
                 </div>
                 <div className="p-6">
                   <ul className="space-y-4">
@@ -215,7 +317,6 @@ function App() {
               </div>
             )}
 
-            {/* Data Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-200">
                 <h3 className="font-semibold text-slate-800">Dados Extraídos</h3>
@@ -232,7 +333,6 @@ function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
-                    {/* Main Doc */}
                     <tr className="bg-blue-50/50 hover:bg-blue-50 transition-colors">
                       <td className="px-6 py-4 font-medium flex items-center gap-2 text-blue-800">
                         <FileText size={16} />
@@ -246,41 +346,31 @@ function App() {
                       <td className="px-6 py-4 font-semibold text-right text-slate-800">R$ {results.main_document.valor || '0,00'}</td>
                     </tr>
                     
-                    {/* Attachments */}
                     {results.attachments_data.map((att, idx) => (
                       <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-slate-600 flex items-center gap-2">
-                          <FileText size={16} className="text-slate-400" />
-                          Anexo {idx + 1}
+                        <td className="px-6 py-4 font-medium text-blue-600 flex items-center gap-2 max-w-[200px]" title={att.nome_arquivo || `Anexo ${idx + 1}`}>
+                          <FileText size={16} className="text-slate-400 shrink-0" />
+                          {att.nome_arquivo ? (
+                            <a href={`http://localhost:8000/archives/${encodeURIComponent(att.nome_arquivo)}`} target="_blank" rel="noreferrer" className="truncate hover:underline hover:text-blue-800">
+                              {att.nome_arquivo}
+                            </a>
+                          ) : (
+                            <span className="truncate text-slate-600">Anexo {idx + 1}</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-slate-600">{att.data || '-'}</td>
                         <td className="px-6 py-4">
-                          <span className="bg-slate-100 border border-slate-200 px-2 py-1 rounded-md text-xs font-medium text-slate-600">{att.categoria}</span>
+                          <span className={`border px-2 py-1 rounded-md text-xs font-medium ${att.status === 'erro_leitura' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                            {att.status === 'erro_leitura' ? 'ERRO OCR/PDF' : att.categoria}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 text-slate-600 truncate max-w-xs" title={att.descricao || ''}>{att.descricao || '-'}</td>
+                        <td className="px-6 py-4 text-slate-600 truncate max-w-xs" title={att.descricao || att.erro || ''}>{att.status === 'erro_leitura' ? att.erro : (att.descricao || '-')}</td>
                         <td className="px-6 py-4 font-medium text-right text-slate-700">R$ {att.valor || '0,00'}</td>
                       </tr>
                     ))}
-                    
-                    {results.attachments_data.length === 0 && (
-                      <tr>
-                        <td colSpan="5" className="px-6 py-8 text-center text-slate-400">
-                          Nenhum anexo encontrado neste documento.
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
-            </div>
-            
-            <div className="flex justify-center pt-4 pb-8">
-              <button 
-                onClick={() => setResults(null)}
-                className="text-slate-500 hover:text-slate-800 font-medium text-sm transition-colors"
-              >
-                ← Analisar outro documento
-              </button>
             </div>
             
           </div>

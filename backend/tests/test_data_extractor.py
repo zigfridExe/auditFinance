@@ -16,7 +16,7 @@ def test_extract_data_generico(data_extractor):
     result = data_extractor.extract(text, doc_type="generico")
     
     assert result["data"] == "10/05/2026"
-    assert result["valor"] == "1500,00"
+    assert result["valor"] == "1.500,00"
     assert result["descricao"] == "Manutenção do elevador"
     assert result["categoria"] == "Manutenção"
 
