@@ -23,7 +23,22 @@ echo "🔍 Porta disponível encontrada para frontend: $FRONTEND_PORT"
 # Inicia o Backend Python em background
 echo "🚀 Iniciando Backend (FastAPI) na porta $BACKEND_PORT..."
 cd backend
+
+# Cria venv se não existir
+if [ ! -d "venv" ]; then
+    echo "📦 Criando ambiente virtual..."
+    python3 -m venv venv
+fi
+
+# Ativa venv
 source venv/bin/activate
+
+# Instala dependências se necessário
+if [ ! -f "venv/.installed" ]; then
+    echo "📦 Instalando dependências Python..."
+    pip install -r requirements.txt
+    touch venv/.installed
+fi
 
 # Cria arquivo .env com as portas para o frontend ler
 cat > ../frontend/.env.local << EOF
