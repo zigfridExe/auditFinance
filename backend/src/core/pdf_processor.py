@@ -2,8 +2,19 @@ import os
 from pypdf import PdfReader
 from PIL import Image, UnidentifiedImageError
 # import pytesseract (movido para dentro do bloco de imagem para evitar erros de importação)
+from .hybrid_processor import HybridProcessor
 
 class PDFProcessor:
+    def __init__(self):
+        self._hybrid_processor = None
+
+    @property
+    def hybrid_processor(self):
+        """Lazy initialization do HybridProcessor"""
+        if self._hybrid_processor is None:
+            self._hybrid_processor = HybridProcessor()
+        return self._hybrid_processor
+    
     def extract_text(self, file_path: str) -> str:
         ext = os.path.splitext(file_path)[1].lower()
         
@@ -63,6 +74,31 @@ class PDFProcessor:
         # 4. Qualquer outra extensão desconhecida cai na regra do usuário
         else:
             raise Exception(f"Extensão '{ext}' precisa de tratamento específico futuro.")
+
+    def extract_structured(self, file_path: str) -> dict:
+        """
+        Extrai dados estruturados usando o pipeline híbrido
+        (detecta tipo de PDF e usa o método apropriado)
+        
+        Args:
+            file_path: Caminho do arquivo
+            
+        Returns:
+            Dicionário com dados estruturados
+        """
+        ext = os.path.splitext(file_path)[1].lower()
+        
+        if ext == '.pdf':
+            return self.hybrid_processor.process(file_path)
+        else:
+            # Para não-PDFs, usa o método tradicional
+            text = self.extract_text(file_path)
+            from .data_extractor import DataExtractor
+            extractor = DataExtractor()
+            result = extractor.extract(text)
+            result["extraction_method"] = "traditional"
+            result["extraction_success"] = True
+            return result
 
     def extract_links(self, file_path: str) -> list[str]:
         links = []

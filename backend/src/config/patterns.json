@@ -103,17 +103,14 @@
             "efetuada em[\\s:]*(\\d{2}/\\d{2}/\\d{4})"
         ],
         "valor": [
-            "(?:Lquido[\\s\\n]*-[\\s\\n]*>|Lquido[\\s\\n]*a[\\s\\n]*receber|Total[\\s\\n]*da[\\s\\n]*Fatura|Total[\\s\\n]*a[\\s\\n]*pagar)[\\s:]*R?\\$?\\s*([\\d\\.,]{3,})",
-            "(?:Valor[\\s\\n]*do[\\s\\n]*pagamento|Total[\\s\\n]*pago|Total[\\s\\n]*recolher)[\\s:]*R?\\$?\\s*([\\d\\.,]{3,})",
-            "\\(=[\\s\\n]*\\) Valor do pagamento.{0,10}R?\\$?\\s*([\\d\\.,]{3,})",
-            "JAN/2026.{0,20}R?\\$?\\s*([\\d\\.,]{3,})",
-            "(?:Valor[\\s\\n]*do[\\s\\n]*boleto|Valor[\\s\\n]*nominal)[\\s:]*R?\\$?\\s*([\\d\\.,]{3,})",
-            "(?:Total|Valor|Lquido|Pagar)[\\s:]*R?\\$?\\s*([\\d\\.,]{3,})"
+            "valor:[\\s;:]*R\\$\\s*([\\d\\.,]+)", 
+            "valor transferido[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "valor pago[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)", 
+            "Valor do boleto \\(R\\$\\)[;:\\s]*(?:.*?)[\\s\\n\\r]*([\\d\\.,]{3,})", 
+            "Valor do pagamento \\(R\\$\\)[;:\\s]*(?:.*?)[\\s\\n\\r]*([\\d\\.,]{3,})", 
+            "valor total[\\s;:]*(?:R\\$)?\\s*([\\d\\.,]+)"
         ],
-        "descricao": [
-            "(?:Beneficiário|Razão Social|Favorecido|Prestador):?\\s*(.*)",
-            "(?:Referente a|Serviço|Descrição):?\\s*(.*)"
-        ],
+        "descricao": ["nome do recebedor:[\\s:]*(.*?)", "recebedor:[\\s:]*(.*?)", "favorecido:[\\s:]*(.*?)", "Favorecido[\\s:]*(.*?)", "Nome do Favorecido[\\s:]*(.*?)(?=CPF|CNPJ|$)"],
         "categoria": { "Pagamentos": ["transferncia", "pix", "pagamento", "sispag", "boleto"] }
     },
     "boleto_bancario": {
