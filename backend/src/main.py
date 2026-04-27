@@ -1,25 +1,30 @@
 import os
 import shutil
 import asyncio
-from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
+from dotenv import load_dotenv
+from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from typing import List
 
+# Carrega variáveis de ambiente do .env na raiz do projeto
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
+print(f"[MAIN] Carregando .env de: {env_path}")
+print(f"[MAIN] Arquivo existe: {os.path.exists(env_path)}")
+load_dotenv(dotenv_path=env_path)
+print(f"[MAIN] GEMINI_API_KEY carregada: {os.getenv('GEMINI_API_KEY', 'NÃO ENCONTRADA')[:20]}...")
+
 from src.core.pdf_processor import PDFProcessor
-from src.core.data_extractor import DataExtractor
 from src.core.downloader import DocumentDownloader
 from src.core.audit import AuditEngine
+from src.api.test_routes import router as test_router
 
 app = FastAPI(title="Minerador de Contas API", version="0.2.0")
 
-# Lê a porta do frontend do ambiente se disponível
-frontend_port = os.getenv("FRONTEND_PORT", "5173")
-frontend_url = f"http://localhost:{frontend_port}"
-
+# CORS dinâmico - aceita qualquer origem (o frontend envia a porta dinamicamente)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", frontend_url],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,6 +34,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ARCHIVES_DIR = os.path.join(BASE_DIR, "archives")
 os.makedirs(ARCHIVES_DIR, exist_ok=True)
 app.mount("/archives", StaticFiles(directory=ARCHIVES_DIR), name="archives")
+
+# Inclui rotas de teste
+app.include_router(test_router)
 
 # Gerenciador de WebSocket para os logs (Janelinha verde)
 class ConnectionManager:
@@ -52,7 +60,6 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 processor = PDFProcessor()
-extractor = DataExtractor()
 audit_engine = AuditEngine()
 
 @app.websocket("/api/ws/logs")
@@ -60,10 +67,17 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            # Mantém a conexão aberta esperando mensagens do cliente (ping)
-            await websocket.receive_text()
+            # Tenta receber mensagem do cliente (ping/pong)
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+            except asyncio.TimeoutError:
+                # Timeout normal, continua mantendo conexão
+                pass
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    except Exception as e:
+        manager.disconnect(websocket)
+        print(f"WebSocket error: {e}")
 
 @app.get("/")
 def read_root():
@@ -89,12 +103,13 @@ async def mine_pdf(
         shutil.copyfileobj(file.file, buffer)
         
     try:
-        await manager.broadcast("> Lendo PDF principal e extraindo texto...")
-        main_text = processor.extract_text(temp_path)
+        await manager.broadcast("> Lendo PDF principal e extraindo dados...")
         main_links = processor.extract_links(temp_path)
         await manager.broadcast(f"> Foram encontrados {len(main_links)} links de anexos.")
         
-        main_data = extractor.extract(main_text)
+        # Usa pipeline híbrido para extração estruturada
+        main_data = processor.extract_structured(temp_path)
+        await manager.broadcast(f"> Método de extração: {main_data.get('extraction_method', 'unknown')}")
         
         attachments_data = []
         links_to_process = list(main_links)
@@ -139,13 +154,13 @@ async def mine_pdf(
                 
                 try:
                     await manager.broadcast(f"> Lendo anexo '{real_filename}'...")
-                    att_text = processor.extract_text(att_path)
-                    att_data = extractor.extract(att_text)
+                    # Usa pipeline híbrido para anexos também
+                    att_data = processor.extract_structured(att_path)
                     att_data["source_link"] = link
                     att_data["status"] = "sucesso"
                     att_data["nome_arquivo"] = real_filename
                     attachments_data.append(att_data)
-                    await manager.broadcast(f"> Sucesso ao processar {real_filename}.")
+                    await manager.broadcast(f"> Sucesso ao processar {real_filename} ({att_data.get('extraction_method', 'unknown')}).")
                 except Exception as e:
                     await manager.broadcast(f"> [ERRO] Falha ao ler anexo '{real_filename}': {e}")
                     attachments_data.append({
@@ -200,13 +215,13 @@ async def mine_local_folder(
                 if ext in ['.pdf', '.jpg', '.jpeg', '.png']:
                     try:
                         await manager.broadcast(f"> Lendo arquivo local '{filename}'...")
-                        att_text = processor.extract_text(file_path)
-                        att_data = extractor.extract(att_text)
+                        # Usa pipeline híbrido
+                        att_data = processor.extract_structured(file_path)
                         att_data["source_link"] = "Pasta Local"
                         att_data["status"] = "sucesso"
                         att_data["nome_arquivo"] = filename
                         attachments_data.append(att_data)
-                        await manager.broadcast(f"> Sucesso: {filename}")
+                        await manager.broadcast(f"> Sucesso: {filename} ({att_data.get('extraction_method', 'unknown')})")
                     except Exception as e:
                         await manager.broadcast(f"> [ERRO] Falha ao ler '{filename}': {e}")
                         attachments_data.append({
@@ -258,13 +273,13 @@ async def mine_batch(
                     shutil.copyfileobj(file.file, buffer)
                 
                 await manager.broadcast(f"> Lendo arquivo '{safe_filename}'...")
-                att_text = processor.extract_text(save_path)
-                att_data = extractor.extract(att_text)
+                # Usa pipeline híbrido
+                att_data = processor.extract_structured(save_path)
                 att_data["source_link"] = "Lote Local"
                 att_data["status"] = "sucesso"
                 att_data["nome_arquivo"] = safe_filename
                 attachments_data.append(att_data)
-                await manager.broadcast(f"> Sucesso: {safe_filename}")
+                await manager.broadcast(f"> Sucesso: {safe_filename} ({att_data.get('extraction_method', 'unknown')})")
                 
             except Exception as e:
                 await manager.broadcast(f"> [ERRO] Falha ao ler '{safe_filename}': {e}")
