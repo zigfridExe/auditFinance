@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiClient:
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-3-flash-preview"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-1.5-flash-latest"):
         """
         Args:
             api_key: Chave da API Gemini (se None, busca da variável de ambiente GEMINI_API_KEY)
