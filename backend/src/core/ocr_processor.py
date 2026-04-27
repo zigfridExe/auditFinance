@@ -4,7 +4,7 @@ Processador de OCR usando PaddleOCR com fallback para Tesseract
 """
 
 import os
-from paddleocr import PaddleOCR
+# from paddleocr import PaddleOCR  # PaddleOCR não está instalado
 from typing import List, Dict, Any
 import logging
 
