@@ -15,11 +15,35 @@ logger = logging.getLogger(__name__)
 
 class HybridProcessor:
     def __init__(self):
-        """Inicializa todos os processadores"""
-        self.type_detector = PDFTypeDetector()
-        self.ocr_processor = OCRProcessor(use_gpu=False)  # CPU-only por enquanto
-        self.semantic_structurer = SemanticStructurer()
-        self.data_extractor = DataExtractor()
+        """Inicializa todos os processadores (lazy)"""
+        self._type_detector = None
+        self._ocr_processor = None
+        self._semantic_structurer = None
+        self._data_extractor = None
+
+    @property
+    def type_detector(self):
+        if self._type_detector is None:
+            self._type_detector = PDFTypeDetector()
+        return self._type_detector
+
+    @property
+    def ocr_processor(self):
+        if self._ocr_processor is None:
+            self._ocr_processor = OCRProcessor()
+        return self._ocr_processor
+
+    @property
+    def semantic_structurer(self):
+        if self._semantic_structurer is None:
+            self._semantic_structurer = SemanticStructurer()
+        return self._semantic_structurer
+
+    @property
+    def data_extractor(self):
+        if self._data_extractor is None:
+            self._data_extractor = DataExtractor()
+        return self._data_extractor
 
     def process(self, pdf_path: str) -> Dict[str, Any]:
         """

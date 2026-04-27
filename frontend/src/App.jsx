@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { UploadCloud, FileText, AlertTriangle, CheckCircle, Download, FileJson, FolderOpen, Terminal } from 'lucide-react';
+import { UploadCloud, FileText, AlertTriangle, CheckCircle, Download, FileJson, FolderOpen, Terminal, FlaskConical } from 'lucide-react';
+import Tests from './Tests';
 
 // Configuração da API URL baseada em variável de ambiente
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -11,6 +12,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
+  const [showTests, setShowTests] = useState(false);
   
   // Terminal state
   const [logs, setLogs] = useState([]);
@@ -18,9 +20,16 @@ function App() {
 
   // WebSocket Nativo para receber logs em tempo real
   useEffect(() => {
-    const ws = new WebSocket(`ws://${API_URL.replace('http://', 'ws://')}/api/ws/logs`);
+    const wsUrl = API_URL.replace('http://', 'ws://').replace('https://', 'wss://');
+    const ws = new WebSocket(`${wsUrl}/api/ws/logs`);
     ws.onmessage = (event) => {
       setLogs((prev) => [...prev, event.data]);
+    };
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+    ws.onclose = () => {
+      console.log('WebSocket closed');
     };
     return () => {
       ws.close();
@@ -149,20 +158,36 @@ function App() {
               <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Minerador de Contas</p>
             </div>
           </div>
-          {results && (
-            <button 
-              onClick={exportCSV}
-              className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-md font-medium text-sm transition-all shadow-sm"
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowTests(!showTests)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all shadow-sm ${
+                showTests
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
             >
-              <Download size={16} />
-              Exportar CSV
+              <FlaskConical size={16} />
+              {showTests ? 'Voltar' : 'Testes'}
             </button>
-          )}
+            {results && !showTests && (
+              <button
+                onClick={exportCSV}
+                className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-md font-medium text-sm transition-all shadow-sm"
+              >
+                <Download size={16} />
+                Exportar CSV
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-8">
-        
+        {showTests ? (
+          <Tests />
+        ) : (
+          <>
         {/* Settings & Upload Zone */}
         <div className="flex flex-col gap-8 max-w-3xl mx-auto">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 flex flex-col transition-all">
@@ -256,7 +281,7 @@ function App() {
         </div>
 
         {/* Results Area */}
-        {results && (
+        {results && !showTests && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8 pt-8 border-t border-slate-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -375,6 +400,8 @@ function App() {
               </div>
             </div>
           </div>
+        )}
+          </>
         )}
       </main>
     </div>

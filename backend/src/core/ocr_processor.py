@@ -1,6 +1,6 @@
 """
-OCR Processor using PaddleOCR
-Processa PDFs escaneados usando visão computacional
+OCR Processor using Paddle
+Processador de OCR usando PaddleOCR com fallback para Tesseract
 """
 
 import os
@@ -12,63 +12,74 @@ logger = logging.getLogger(__name__)
 
 
 class OCRProcessor:
-    def __init__(self, use_gpu: bool = False, lang: str = "pt"):
+    def __init__(self, lang: str = "pt"):
         """
         Args:
-            use_gpu: Usar GPU para acelerar (False para CPU-only)
             lang: Idioma para OCR (pt = português)
         """
-        self.use_gpu = use_gpu
         self.lang = lang
         self.ocr = None
         self._initialized = False
+        self._use_tesseract = False
+        self._tesseract = None
 
     def _initialize(self):
-        """Inicializa o PaddleOCR (lazy loading)"""
+        """Inicializa o OCR (usa Tesseract por padrão por ser mais compatível)"""
         if self._initialized:
             return
-        
+
+        # Usa Tesseract diretamente (mais compatível)
+        print(f"[OCR] Usando Tesseract OCR...")
+        self._use_tesseract = True
+
         try:
-            self.ocr = PaddleOCR(
-                use_angle_cls=True,
-                lang=self.lang,
-                use_gpu=self.use_gpu,
-                show_log=False
-            )
+            from .tesseract_ocr import TesseractOCR
+            self._tesseract = TesseractOCR(lang="por" if self.lang == "pt" else "eng")
             self._initialized = True
-            logger.info("PaddleOCR inicializado com sucesso")
-        except Exception as e:
-            logger.error(f"Erro ao inicializar PaddleOCR: {e}")
-            raise
+            print(f"[OCR] Tesseract inicializado com sucesso")
+        except ImportError:
+            logger.error("Tesseract não disponível")
+            raise RuntimeError("Tesseract não está disponível")
 
     def extract_text_from_image(self, image_path: str) -> str:
         """
         Extrai texto de uma imagem usando OCR
-        
+
         Args:
             image_path: Caminho da imagem
-            
+
         Returns:
             Texto extraído
         """
+        print(f"[OCR] Iniciando extração de {image_path}")
         self._initialize()
-        
+        print(f"[OCR] OCR inicializado")
+
         try:
-            result = self.ocr.ocr(image_path, cls=True)
-            
-            if not result or not result[0]:
-                return ""
-            
-            # Concatena todo o texto reconhecido
-            text_lines = []
-            for line in result[0]:
-                if line and len(line) > 0:
-                    text_lines.append(line[1][0])  # line[1][0] é o texto
-            
-            return "\n".join(text_lines)
-            
+            if self._use_tesseract:
+                print(f"[OCR] Usando Tesseract...")
+                return self._tesseract.extract_text_from_image(image_path)
+            else:
+                print(f"[OCR] Executando PaddleOCR na imagem...")
+                result = self.ocr.ocr(image_path, cls=True)
+                print(f"[OCR] OCR concluído")
+
+                if not result or not result[0]:
+                    print(f"[OCR] Nenhum resultado encontrado")
+                    return ""
+
+                # Concatena todo o texto reconhecido
+                text_lines = []
+                for line in result[0]:
+                    if line and len(line) > 0:
+                        text_lines.append(line[1][0])  # line[1][0] é o texto
+
+                print(f"[OCR] {len(text_lines)} linhas extraídas")
+                return "\n".join(text_lines)
+
         except Exception as e:
             logger.error(f"Erro ao extrair texto de {image_path}: {e}")
+            print(f"[OCR] ERRO: {e}")
             return ""
 
     def extract_text_from_pdf(self, pdf_path: str) -> str:

@@ -6,7 +6,14 @@ from .hybrid_processor import HybridProcessor
 
 class PDFProcessor:
     def __init__(self):
-        self.hybrid_processor = HybridProcessor()
+        self._hybrid_processor = None
+
+    @property
+    def hybrid_processor(self):
+        """Lazy initialization do HybridProcessor"""
+        if self._hybrid_processor is None:
+            self._hybrid_processor = HybridProcessor()
+        return self._hybrid_processor
     
     def extract_text(self, file_path: str) -> str:
         ext = os.path.splitext(file_path)[1].lower()

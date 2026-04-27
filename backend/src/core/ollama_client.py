@@ -16,7 +16,7 @@ class OllamaClient:
         """
         Args:
             base_url: URL da API Ollama
-            model: Modelo a ser usado
+            model: Modelo a ser usado (qwen2.5:0.5b é melhor para português e JSON)
         """
         self.base_url = base_url
         self.model = model
@@ -31,7 +31,7 @@ class OllamaClient:
             return self._available
         
         try:
-            response = self.client.get(f"{self.base_url}/api/tags")
+            response = self.client.get(f"{self.base_url}/api/tags", timeout=5.0)
             self._available = response.status_code == 200
             return self._available
         except Exception as e:
@@ -39,36 +39,62 @@ class OllamaClient:
             self._available = False
             return False
 
+    def model_exists(self) -> bool:
+        """
+        Verifica se o modelo específico existe no Ollama
+        """
+        try:
+            response = self.client.get(f"{self.base_url}/api/tags", timeout=5.0)
+            if response.status_code == 200:
+                models = response.json().get("models", [])
+                model_names = [m["name"] for m in models]
+                return self.model in model_names
+            return False
+        except Exception as e:
+            logger.warning(f"Erro ao verificar modelo: {e}")
+            return False
+
     def generate(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         """
         Gera texto usando o modelo
-        
+
         Args:
             prompt: Prompt do usuário
             system_prompt: System prompt opcional
-            
+
         Returns:
             Texto gerado
         """
         if not self.is_available():
             raise RuntimeError("Ollama não está disponível")
-        
+
         payload = {
             "model": self.model,
             "prompt": prompt,
-            "stream": False
+            "stream": False,
+            "options": {
+                "num_thread": 2,  # Força usar apenas 2 núcleos (otimizado para Celeron)
+                "num_ctx": 2048,  # Limita janela de contexto para não travar a RAM
+                "num_predict": 100,  # Limita tokens gerados
+                "temperature": 0.1  # Mais determinístico
+            }
         }
-        
+
         if system_prompt:
             payload["system"] = system_prompt
-        
+
         try:
+            print(f"[OLLAMA] Enviando requisição para {self.base_url}/api/generate")
+            print(f"[OLLAMA] Payload: {payload}")
             response = self.client.post(f"{self.base_url}/api/generate", json=payload)
+            print(f"[OLLAMA] Status code: {response.status_code}")
             response.raise_for_status()
             result = response.json()
+            print(f"[OLLAMA] Resposta recebida")
             return result.get("response", "")
         except Exception as e:
             logger.error(f"Erro ao gerar com Ollama: {e}")
+            print(f"[OLLAMA] ERRO: {e}")
             raise
 
     def generate_json(self, prompt: str, system_prompt: Optional[str] = None) -> Dict[str, Any]:
