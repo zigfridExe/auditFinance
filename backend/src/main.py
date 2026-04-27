@@ -13,9 +13,13 @@ from src.core.audit import AuditEngine
 
 app = FastAPI(title="Minerador de Contas API", version="0.2.0")
 
+# Lê a porta do frontend do ambiente se disponível
+frontend_port = os.getenv("FRONTEND_PORT", "5173")
+frontend_url = f"http://localhost:{frontend_port}"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*", frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

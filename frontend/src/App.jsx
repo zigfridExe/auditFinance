@@ -1,6 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { UploadCloud, FileText, AlertTriangle, CheckCircle, Download, FileJson, FolderOpen, Terminal } from 'lucide-react';
+
+// Configuração da API URL baseada em variável de ambiente
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function App() {
   const [file, setFile] = useState(null);
@@ -15,7 +18,7 @@ function App() {
 
   // WebSocket Nativo para receber logs em tempo real
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8000/api/ws/logs');
+    const ws = new WebSocket(`ws://${API_URL.replace('http://', 'ws://')}/api/ws/logs`);
     ws.onmessage = (event) => {
       setLogs((prev) => [...prev, event.data]);
     };
@@ -54,7 +57,7 @@ function App() {
     }
 
     try {
-      const response = await axios.post('http://localhost:8000/api/mine', formData, {
+      const response = await axios.post(`${API_URL}/api/mine`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -85,7 +88,7 @@ function App() {
     });
 
     try {
-      const response = await axios.post('http://localhost:8000/api/mine_batch', formData, {
+      const response = await axios.post(`${API_URL}/api/mine_batch`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -350,7 +353,7 @@ function App() {
                         <td className="px-6 py-4 font-medium text-blue-600 flex items-center gap-2 max-w-[200px]" title={att.nome_arquivo || `Anexo ${idx + 1}`}>
                           <FileText size={16} className="text-slate-400 shrink-0" />
                           {att.nome_arquivo ? (
-                            <a href={`http://localhost:8000/archives/${encodeURIComponent(att.nome_arquivo)}`} target="_blank" rel="noreferrer" className="truncate hover:underline hover:text-blue-800">
+                            <a href={`${API_URL}/archives/${encodeURIComponent(att.nome_arquivo)}`} target="_blank" rel="noreferrer" className="truncate hover:underline hover:text-blue-800">
                               {att.nome_arquivo}
                             </a>
                           ) : (
